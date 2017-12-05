@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import gzip
+import io
 import os
 import json
 from gi.repository import Gtk, GLib
@@ -49,15 +51,15 @@ class BitcoinPriceMonitor:
 
     def handler_timeout(self):
         try:
-            data = json.load(
-                urlopen(
-                    'https://www.zebapi.com/api/v1/market/ticker/btc/inr'
-                )
-            )
-            buy_price = data['buy']
-            sell_price = data['sell']
-            status_message = "Buy: ₹ " + "{:,}".format(buy_price) + "   Sell: ₹ " + "{:,}".format(sell_price)
-            self.ind.set_label(status_message, "")
+			with io.BytesIO(urlopen(
+				'https://www.zebapi.com/api/v1/market/ticker/btc/inr'
+				).read()) as compressed:
+					decompressed = gzip.GzipFile(fileobj=compressed)
+					data = json.load(decompressed)
+					buy_price = data['buy']
+					sell_price = data['sell']
+					status_message = "Buy: ₹ " + "{:,}".format(buy_price) + "   Sell: ₹ " + "{:,}".format(sell_price)
+					self.ind.set_label(status_message, "")
         except Exception, e:
             print str(e)
             self.ind.set_label("!", "")
